@@ -21,6 +21,7 @@ $:.unshift File.expand_path('./support', $cubemagic_dir)
 require 'dsl.rb'
 require 'project.rb'
 
+require 'readline'
 require 'zip'
 
 # -- Main Program ------------------------------------------------------------------------------------------------------
@@ -176,7 +177,15 @@ def unpack_cube(project, overwrite = false)
   zipfile.close
 end
 
+def template_prompt(prompt)
+  Readline.readline(prompt, true).squeeze(' ').strip.downcase
+end
+
 def unpack_templates(project, destdir, prompt, overwrite = false)
+  if prompt
+    overwrite = true
+  end
+
   filter = ComponentUsedFilter.new
 
   templates = []
@@ -197,7 +206,10 @@ def unpack_templates(project, destdir, prompt, overwrite = false)
     end
 
     if prompt
-      # TODO: implement prompt.
+      response = template_prompt("\nUnpack template: #{template.template}\nYes or no? [no] : ")
+      if (response == 'yes')
+        unpack_file(zipfile, zipname, destname, overwrite)
+      end
     else
       if template.auto
         unpack_file(zipfile, zipname, destname, overwrite)
@@ -210,6 +222,6 @@ end
 
 # unpack_cube(project, true)
 
-unpack_templates(project, './conf', false)
+unpack_templates(project, './conf', true)
 
 puts 'Done...'
