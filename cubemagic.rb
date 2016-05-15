@@ -46,6 +46,29 @@ class CmdLine
   end
 end
 
+def merge_component_base(component_base, what)
+  merged = []
+  case what
+    when 'defines'
+      merged += component_base.defines unless component_base.defines == nil
+    when 'libs'
+      merged += component_base.libs unless component_base.libs == nil
+    when 'srcs'
+      merged += component_base.srcs unless component_base.srcs == nil
+    when 'sys_srcs'
+      merged += component_base.sys_srcs unless component_base.sys_srcs == nil
+    when 'incs'
+      merged += component_base.incs unless component_base.incs == nil
+    when 'sys_incs'
+      merged += component_base.sys_incs unless component_base.sys_incs == nil
+    when 'templates'
+      merged += component_base.templates unless component_base.templates == nil
+    else
+      # Do nothing.
+  end
+  merged
+end
+
 def merge(component_set, what, project, filters = nil)
   merged = []
 
@@ -65,45 +88,11 @@ def merge(component_set, what, project, filters = nil)
         end
       end
 
-      case what
-        when 'defines'
-          merged += component.defines unless component.defines == nil
-        when 'libs'
-          merged += component.libs unless component.libs == nil
-        when 'srcs'
-          merged += component.srcs unless component.srcs == nil
-        when 'sys_srcs'
-          merged += component.sys_srcs unless component.sys_srcs == nil
-        when 'incs'
-          merged += component.incs unless component.incs == nil
-        when 'sys_incs'
-          merged += component.sys_incs unless component.sys_incs == nil
-        when 'templates'
-          merged += component.templates unless component.templates == nil
-        else
-          # Do nothing.
-      end
+      merged += merge_component_base(component, what)
 
       component.conditionals.each do |conditional|
         if conditional.conditions_met?(project)
-          case what
-            when 'defines'
-              merged += conditional.defines unless conditional.defines == nil
-            when 'libs'
-              merged += conditional.libs unless conditional.libs == nil
-            when 'srcs'
-              merged += conditional.srcs unless conditional.srcs == nil
-            when 'sys_srcs'
-              merged += conditional.sys_srcs unless conditional.sys_srcs == nil
-            when 'incs'
-              merged += conditional.incs unless conditional.incs == nil
-            when 'sys_incs'
-              merged += conditional.sys_incs unless conditional.sys_incs == nil
-            when 'templates'
-              merged += conditional.templates unless conditional.templates == nil
-            else
-              # Do nothing.
-          end
+          merged += merge_component_base(conditional, what)
         end
       end unless component.conditionals == nil
     end
