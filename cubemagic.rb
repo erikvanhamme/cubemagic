@@ -14,17 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$cubemagic_dir = File.dirname(__FILE__)
+require 'erb'
+require 'optparse'
+require 'readline'
+require 'pathname'
+require 'zip'
+
+if File.symlink?(__FILE__)
+  $cubemagic_dir = File.dirname(Pathname.new(__FILE__).realpath)
+else
+  $cubemagic_dir = File.dirname(__FILE__)
+end
 
 $:.unshift File.expand_path('./support', $cubemagic_dir)
 
 require 'dsl.rb'
 require 'project.rb'
-
-require 'erb'
-require 'optparse'
-require 'readline'
-require 'zip'
 
 # -- Main Program ------------------------------------------------------------------------------------------------------
 
@@ -298,7 +303,7 @@ end
 
 # Open zip file if needed.
 if cmd_line.actions[:open_zip]
-  zipfile_name = "#{File.dirname(__FILE__)}/cubes/cube#{project.cube.name}-#{project.cube.version}.zip"
+  zipfile_name = "#{$cubemagic_dir}/cubes/cube#{project.cube.name}-#{project.cube.version}.zip"
 
   puts "Loading cube zip: #{zipfile_name}"
   zipfile = Zip::File.open(zipfile_name)
