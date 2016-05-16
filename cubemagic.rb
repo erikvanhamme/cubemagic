@@ -61,7 +61,7 @@ class LdScriptGen
 
   def generate
     File.open('ldscript.ld', 'w+') do |os|
-      os.puts ERB.new(File.read("#{$cubemagic_dir}/tpl/ldscript.ld.erb"), nil, '-').result(binding)
+      os.puts ERB.new(File.read("#{$cubemagic_dir}/templates/ldscript.ld.erb"), nil, '-').result(binding)
     end
   end
 end
