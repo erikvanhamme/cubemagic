@@ -21,6 +21,7 @@ $:.unshift File.expand_path('./support', $cubemagic_dir)
 require 'dsl.rb'
 require 'project.rb'
 
+require 'erb'
 require 'optparse'
 require 'readline'
 require 'zip'
@@ -43,6 +44,20 @@ class CmdLine
   def initialize
     @actions = {}
     @options = {}
+  end
+end
+
+class LdScriptGen
+  attr_accessor :data
+
+  def initialize(data)
+    @data = data
+  end
+
+  def generate
+    File.open('ldscript.ld', 'w+') do |os|
+      os.puts ERB.new(File.read("#{$cubemagic_dir}/tpl/ldscript.ld.erb"), nil, '-').result(binding)
+    end
   end
 end
 
@@ -311,7 +326,8 @@ end
 
 # Generate the linker script if needed.
 if cmd_line.actions[:linker_script]
-  # TODO: implement me
+  puts 'Generating linker script: ldscript.ld'
+  LdScriptGen.new(project.fetch_linker_script_data).generate
 end
 
 # Generate the QT Creator project files if needed.

@@ -1,0 +1,205 @@
+/*
+ * Copyright 2016 Erik Van Hamme
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+OUTPUT_FORMAT ("elf32-littlearm")
+GROUP(-lgcc -lc)
+ENTRY(Reset_Handler)
+
+/* Memory map for <%= data[:chip_name] %> */
+MEMORY
+{
+<%
+	if data[:offset]
+-%>
+	/* Offset of 0x<%= data[:offset].to_s(16).rjust(8, '0') %> specified. */
+<%
+	end
+-%>
+	flash (r x) : ORIGIN = 0x<%= data[:flash_base].to_s(16).rjust(8, '0') %>, LENGTH = <%= data[:flash] / 1024 %>K
+	sram  (rwx) : ORIGIN = 0x<%= data[:sram_base].to_s(16).rjust(8, '0') %>, LENGTH = <%= data[:sram] / 1024 %>K
+<%
+	if data[:ccm]
+-%>
+	ccm   (rw ) : ORIGIN = 0x<%= data[:ccm_base].to_s(16).rjust(8, '0') %>, LENGTH = <%= data[:ccm] / 1024 %>K
+<%
+	elsif data[:itcm] || data[:dtcm]
+-%>
+	itcm  (rwx) : ORIGIN = 0x<%= data[:itcm_base].to_s(16).rjust(8, '0') %>, LENGTH = <%= data[:itcm] / 1024 %>K
+	dtcm  (rw ) : ORIGIN = 0x<%= data[:dtcm_base].to_s(16).rjust(8, '0') %>, LENGTH = <%= data[:dtcm] / 1024 %>K
+<%
+	end
+-%>
+}
+
+_bflash = ORIGIN(flash);
+_esram = ORIGIN(sram) + LENGTH(sram);
+_estack = _esram;
+
+/* Section Definitions. */
+SECTIONS {
+	.text : {
+		KEEP(*(.isr_vector .isr_vector.*))
+		. = ALIGN(4);
+
+		/* Marker to allow to find out size of vector table. */
+		_evector = .;
+
+		/* Section that will not be stripped by linker. Useful for storing firmware version string. */
+		KEEP(*(.nostrip .nostrip.*))
+
+		*(.text .text.* .gnu.linkonce.t.*)
+		*(.glue_7t) *(.glue_7)
+		*(.rodata .rodata* .gnu.linkonce.r.*)
+
+		/* C++ Static constructors (elf) (static destructors are not needed for embedded app)  */
+		. = ALIGN(4);
+		KEEP(*(.init))
+
+		. = ALIGN(4);
+		__preinit_array_start = .;
+		KEEP (*(.preinit_array))
+		__preinit_array_end = .;
+
+		. = ALIGN(4);
+		__init_array_start = .;
+		KEEP (*(SORT(.init_array.*)))
+		KEEP (*(.init_array))
+		__init_array_end = .;
+
+		. = ALIGN(0x4);
+		KEEP (*crtbegin.o(.ctors))
+		KEEP (*(EXCLUDE_FILE (*crtend.o) .ctors))
+		KEEP (*(SORT(.ctors.*)))
+		KEEP (*crtend.o(.ctors))
+	} > flash
+
+	.ARM.extab : {
+		*(.ARM.extab* .gnu.linkonce.armextab.*)
+	} > flash
+
+	.ARM.exidx : {
+		__exidx_start = .;
+		*(.ARM.exidx* .gnu.linkonce.armexidx.*)
+		__exidx_end = .;
+	} > flash
+
+	. = ALIGN(4);
+	_etext = .;
+	_sidata = .;
+
+	.data : AT (_sidata) {
+		_sdata = .;
+		*(.data .data.*)
+		. = ALIGN(4);
+		_edata = . ;
+	} > sram
+
+	_siramfunc = _sidata + LENGTH(.data);
+
+	.ramfunc : AT (_siramfunc) {
+		_sramfunc = .;
+		*(.ramfunc .ramfunc.*)
+		. = ALIGN(4);
+		_eramfunc = .;
+	} > sram
+
+<%
+	if data[:ccm]
+-%>
+	_siccm = _siramfunc + LENGTH(.ramfunc)
+
+	.ccm : AT (_siccm) {
+		_sccm = .;
+		*(.ccm .ccm.*)
+		. = ALIGN(4);
+		_eccm = .;
+	} > ccm
+
+<%
+	elsif data[:itcm] || data[:dtcm]
+-%>
+	_siitcm = _siramfunc + LENGTH(.ramfunc)
+
+	.itcm : AT (_siitcm) {
+		_sitcm = .;
+		*(.itcm .itcm.*)
+		. = ALIGN(4);
+		_eitcm = .;
+	} > itcm
+
+	_sidtcm = _siitcm + LENGTH(.itcm)
+
+	.dtcm : AT (_sidtcm) {
+		_sdtcm = .;
+		*(.dtcm .dtcm.*)
+		. = ALIGN(4);
+		_edtcm = .;
+	} > dtcm
+
+<%
+	end
+-%>
+	.bss (NOLOAD) : {
+		_sbss = . ;
+		*(.bss .bss.*)
+		*(COMMON)
+		. = ALIGN(4);
+		_ebss = . ;
+	} > sram
+
+	_heap_start = .;
+
+<%
+	if data[:mode] == 'debug'
+-%>
+	/* Only debugging information beyond this point. */
+	.stab 0 (NOLOAD) : { *(.stab) }
+	.stabstr 0 (NOLOAD) : { *(.stabstr) }
+	/* DWARF debug sections.
+	 * Symbols in the DWARF debugging sections are relative to the beginning
+	 * of the section so we begin them at 0.  */
+	/* DWARF 1 */
+	.debug          0 : { *(.debug) }
+	.line           0 : { *(.line) }
+	/* GNU DWARF 1 extensions */
+	.debug_srcinfo  0 : { *(.debug_srcinfo) }
+	.debug_sfnames  0 : { *(.debug_sfnames) }
+	/* DWARF 1.1 and DWARF 2 */
+	.debug_aranges  0 : { *(.debug_aranges) }
+	.debug_pubnames 0 : { *(.debug_pubnames) }
+	/* DWARF 2 */
+	.debug_info     0 : { *(.debug_info .gnu.linkonce.wi.*) }
+	.debug_abbrev   0 : { *(.debug_abbrev) }
+	.debug_line     0 : { *(.debug_line) }
+	.debug_frame    0 : { *(.debug_frame) }
+	.debug_str      0 : { *(.debug_str) }
+	.debug_loc      0 : { *(.debug_loc) }
+	.debug_macinfo  0 : { *(.debug_macinfo) }
+	/* DWARF 2.1 */
+	.debug_ranges   0 : { *(.debug_ranges) }
+	/* SGI/MIPS DWARF 2 extensions */
+	.debug_weaknames 0 : { *(.debug_weaknames) }
+	.debug_funcnames 0 : { *(.debug_funcnames) }
+	.debug_typenames 0 : { *(.debug_typenames) }
+	.debug_varnames  0 : { *(.debug_varnames) }
+
+	.note.gnu.arm.ident 0 : { KEEP (*(.note.gnu.arm.ident)) }
+	.ARM.attributes 0 : { KEEP (*(.ARM.attributes)) }
+	/DISCARD/ : { *(.note.GNU-stack) }
+<%
+	end
+-%>
+}

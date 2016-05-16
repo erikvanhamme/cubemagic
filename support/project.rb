@@ -508,4 +508,41 @@ class Project < Item
     verify_uses
     prefix_files_paths
   end
+
+  def fetch_linker_script_data
+    data = {}
+
+    chip = nil
+    chipfamily = nil
+
+    @uses.each do |component|
+      chip = component if component.type == 'chip'
+      chipfamily = component if component.type == 'chipfamily'
+    end
+
+    offset_option = nil
+
+    @options.each do |option|
+      offset_option = option if option.name == 'offset'
+    end
+
+    offset = 0
+    offset = offset_option.value unless offset_option == nil
+
+    data[:chip_name] = chip.name
+    data[:flash] = chip.flash - offset
+    data[:sram] = chip.sram
+    data[:ccm] = chip.ccm
+    data[:itcm] = chip.itcm
+    data[:dtcm] = chip.dtcm
+    data[:flash_base] = chipfamily.flash_base + offset
+    data[:sram_base] = chipfamily.sram_base
+    data[:ccm_base] = chipfamily.ccm_base
+    data[:itcm_base] = chipfamily.itcm_base
+    data[:dtcm_base] = chipfamily.dtcm_base
+    data[:mode] = @mode
+    data[:offset] = offset unless offset == 0
+
+    data
+  end
 end
