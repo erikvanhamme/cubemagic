@@ -17,7 +17,7 @@ cube 'f4', 'v1.11.0', 'STM32Cube_FW_F4_V1.11.0' do
 
   # -- Base Component Section ------------------------------------------------------------------------------------------
 
-  # [ST] CMSIS component as delivered by ARM.
+  # [ARM] CMSIS component as delivered by ARM.
   component 'cmsis' do
     sys_inc 'Drivers/CMSIS/Include'
   end
