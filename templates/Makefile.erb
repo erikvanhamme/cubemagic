@@ -12,17 +12,200 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Name of the project.
 PROJECT := <%= data[:name] %>
 
-# Build mode and build folders.
+<%
+	text = ''
+	data[:arch].each do |arch|
+		text += "-m#{arch} "
+	end
+	text.chomp!(' ')
+-%>
+ARCH := <%= text %>
+
+DEFINES := \
+<%
+	data[:defines].each do |define|
+		text = "-D#{define.name} \\"
+		text = "-D#{define.name}=#{define.value} \\" unless define.value == nil
+-%>
+	<%= text %>
+<%
+	end
+-%>
+
+SRCS := \
+<%
+	data[:srcs].each do |src|
+-%>
+	<%= src %> \
+<%
+	end
+-%>
+
+SYS_SRCS := \
+<%
+	data[:sys_srcs].each do |sys_src|
+-%>
+	<%= sys_src %> \
+<%
+	end
+-%>
+
+INCS := \
+<%
+	data[:incs].each do |inc|
+-%>
+	<%= inc %> \
+<%
+	end
+-%>
+
+SYS_INCS := \
+<%
+	data[:sys_incs].each do |sys_inc|
+-%>
+	<%= sys_inc %> \
+<%
+	end
+-%>
+
+STATIC_LIBS :\
+<%
+	data[:libs].each do |lib|
+-%>
+	<%= lib %> \
+<%
+	end
+-%>
+
 BUILDMODE := <%= data[:mode] %>
 BUILDDIR := $(BUILDMODE)
 
+OBJECTS := $(patsubst %,$(BUILDDIR)/%.o,$(SRCS)) $(patsubst %,$(BUILDDIR)/%sys.o,$(SYS_SRCS))
+OBJECTDIRS := $(sort $(dir $(OBJECTS)))
 
-# List of phony targets.
-.PHONY: clean
+INCLUDEPATHS := $(patsubst %,-I %,$(INCS)) $(patsubst %,-isystem %,$(SYS_INCS))
 
-all:
+ELFFILE := $(BUILDDIR)/$(PROJECT).elf
+BINFILE := $(BUILDDIR)/$(PROJECT).bin
 
-clean:
+W_COMMON := -Wall -Wextra -Wcast-align -Wcast-qual -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op \
+	-Wmissing-include-dirs -Wredundant-decls -Wstrict-overflow=5 -Wno-unused -Wno-variadic-macros -Wno-parentheses \
+	-Wshadow -Wpedantic <%= data[:w_common_opt] %>
+W_C := $(W_COMMON)
+W_CPP := $(W_COMMON) -Wnoexcept -Woverloaded-virtual -Wsign-promo -Wstrict-null-sentinel -Wold-style-cast
+W_AS := -Wall
+
+DEPGEN = -MMD -MP -MF"$(@:%.o=%.d)"
+DEPS := $(patsubst %.o,%.d,$(OBJECTS))
+
+C_FLAGS_COMMON = -c $(DEPGEN) -ffunction-sections -fdata-sections -Wa,-adhlns="$@.lst" -fmessage-length=0
+C_FLAGS = $(C_FLAGS_COMMON) -fno-builtin <%= data[:c_flags_opt] %>
+CPP_FLAGS = $(C_FLAGS_COMMON) <%= data[:cpp_flags_opt] %>
+AS_FLAGS = -c <%= data[:as_flags_opt] %>
+LDFLAGS = -T "ldscript.ld" -Xlinker --gc-sections -nostartfiles --specs=nano.specs <%= data[:ld_flags_opt] %> \
+	-Wl,-Map=$(BUILDDIR)/$(PROJECT).map
+OCFLAGS = -O binary
+
+CC := <%= data[:gcc_path] %>arm-none-eabi-gcc
+AS := <%= data[:gcc_path] %>arm-none-eabi-gcc
+GPP := <%= data[:gcc_path] %>arm-none-eabi-g++
+LD := <%= data[:gcc_path] %>arm-none-eabi-g++
+OC := <%= data[:gcc_path] %>arm-none-eabi-objcopy
+OS := <%= data[:gcc_path] %>arm-none-eabi-size
+OOCD := <%= data[:oocd_path] %>openocd
+
+-include targets.mk
+
+.DEFAULT_GOAL := all
+
+.PHONY:: all info info_verbose clean flash oocd
+
+all:: $(OBJECTDIRS) $(BINFILE)
+
+info::
+	@echo "project        $(PROJECT)"
+	@echo ""
+	@echo "arch           $(ARCH)"
+	@echo ""
+	@echo "builddir:      $(BUILDDIR)"
+	@echo ""
+	@echo "includepaths:  $(INCLUDEPATHS)"
+	@echo ""
+	@echo "cflags:        $(CFLAGS)"
+	@echo ""
+	@echo "cpplags:       $(CPPFLAGS)"
+	@echo ""
+	@echo "asflags:       $(ASFLAGS)"
+	@echo ""
+	@echo "ldflags:       $(LDFLAGS)"
+	@echo ""
+	@echo "defines:       $(DEFINES)"
+	@echo ""
+	@echo "static libs:   $(SLIBS)"
+	@echo ""
+
+info_verbose:: info
+	@echo "sources:       $(SOURCES)"
+	@echo ""
+	@echo "systemsources: $(SYSTEMSOURCES)"
+	@echo ""
+	@echo "objects:       $(OBJECTS)"
+	@echo ""
+	@echo "deps:          $(DEPS)"
+	@echo ""
+
+clean::
+	@echo "Cleaning"
+	@rm -rf $(BUILDDIR)
+
+$(OBJECTDIRS):
+	@echo "Creating output directories"
+	@mkdir -p $(OBJECTDIRS)
+
+$(ELFFILE): $(OBJECTS) $(SLIBS)
+	@echo "Linking"
+	@$(LD) $(ARCH) $(LDFLAGS) $(OBJECTS) $(STATIC_LIBS) -o $(ELFFILE)
+	@echo "---------------------------------------"
+	@$(OS) $(ELFFILE)
+	@echo "---------------------------------------"
+
+$(BINFILE): $(ELFFILE)
+	@$(OC) $(OCFLAGS) $(ELFFILE) $(BINFILE)
+
+flash: $(BINFILE)
+	$(OOCD) $(OOCDCFGS) $(OOCDCMDS)
+
+oocd: $(BINFILE)
+	$(OOCD) $(OOCDCFGS)
+
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(strip $(DEPS)),)
+-include $(DEPS)
+endif
+endif
+
+$(BUILDDIR)/%.s.o : %.s
+	@echo "Assembling $<"
+	@$(AS) $(ARCH) $(AS_FLAGS) $(W_AS) -o "$@" "$<"
+
+$(BUILDDIR)/%.c.o : %.c
+	@echo "Compiling $<"
+	@$(CC) $(ARCH) $(C_FLAGS) $(INCLUDEPATHS) $(DEFINES) $(W_C) -o "$@" "$<"
+
+$(BUILDDIR)/%.cpp.o : %.cpp
+	@echo "Compiling $<"
+	@$(GPP) $(ARCH) $(CPP_FLAGS) $(INCLUDEPATHS) $(DEFINES) $(W_CPP) -o "$@" "$<"
+
+$(BUILDDIR)/%.ssys.o : %.s
+	@echo "Assembling $<"
+	@$(AS) $(ARCH) $(AS_FLAGS) -o "$@" "$<"
+
+$(BUILDDIR)/%.csys.o : %.c
+	@echo "Compiling $<"
+	@$(CC) $(ARCH) $(C_FLAGS) $(INCLUDEPATHS) $(DEFINES) -o "$@" "$<"
+
+$(BUILDDIR)/%.cppsys.o : %.cpp
+	@echo "Compiling $<"
+	@$(GPP) $(ARCH) $(CPP_FLAGS) $(INCLUDEPATHS) $(DEFINES) -o "$@" "$<"

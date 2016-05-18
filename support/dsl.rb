@@ -80,6 +80,14 @@ class DSL_Item
     # TODO: Add validation.
   end
 
+  def parse_arch(item, arch)
+    if item.arch == nil
+      item.arch = []
+    end
+    item.arch << arch
+    # TODO: Add validation.
+  end
+
   def parse_component(item, name, type, &block)
     if item.components == nil
       item.components = []
@@ -119,6 +127,10 @@ class DSL_ComponentBase < DSL_Item
 
   def template(template, auto = nil)
     parse_template(@item, template, auto)
+  end
+
+  def arch(arch)
+    parse_arch(@item, arch)
   end
 end
 

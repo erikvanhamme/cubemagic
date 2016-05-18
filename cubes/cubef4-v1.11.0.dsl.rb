@@ -304,6 +304,8 @@ cube 'f4', 'v1.11.0', 'STM32Cube_FW_F4_V1.11.0' do
     depends 'cmsis'
     define 'USE_HAL_DRIVER'
     sys_inc 'Drivers/STM32F4xx_HAL_Driver/Inc'
+    # TODO: Delete the hack below if the headers for sub dirs are also extracted.
+    sys_inc 'Drivers/STM32F4xx_HAL_Driver/Inc/Legacy'
     sys_src 'Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c'
     sys_src 'Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc_ex.c'
     sys_src 'Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c'
@@ -383,9 +385,13 @@ cube 'f4', 'v1.11.0', 'STM32Cube_FW_F4_V1.11.0' do
     flash_base 0x08000000
     sram_base 0x20000000
     ccm_base 0x10000000
+    arch 'cpu=cortex-m4'
+    arch 'thumb'
     conditional do
       condition_option_set 'fpu'
       define '__FPU_PRESENT', 1
+      arch 'float-abi=hard'
+      arch 'fpu=fpv4-sp-d16'
     end
     sys_inc 'Drivers/CMSIS/Device/ST/STM32F4xx/Include'
     template 'Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c', 'auto'

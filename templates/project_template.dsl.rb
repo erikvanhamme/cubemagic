@@ -29,6 +29,7 @@ project 'template_project' do
   option 'noexcept'
   option 'nortti'
   option 'c++14'
+  option 'c11'
   option 'werror'
   option 'offset', 0x0
   option 'fpu'

@@ -14,6 +14,8 @@
 
 require 'tsort'
 
+require 'utils.rb'
+
 class TsortableHash < Hash
   include TSort
 
@@ -102,7 +104,7 @@ class ConditionUse <  Item
 end
 
 class ComponentBase < Item
-  attr_accessor :libs, :sys_incs, :sys_srcs, :srcs, :incs, :defines, :templates
+  attr_accessor :libs, :sys_incs, :sys_srcs, :srcs, :incs, :defines, :templates, :arch
 end
 
 class Conditional < ComponentBase
@@ -372,22 +374,22 @@ class Project < Item
   end
 
   def replace_expand_uses
-    if self.uses == nil
-      self.uses = []
+    if @uses == nil
+      @uses = []
     end
 
     @all_components.each do |name, component|
       if (component.auto != nil) && component.auto
-        self.uses << name
+        @uses << name
       end
     end
 
-    self.uses.uniq!
+    @uses.uniq!
 
-    self.uses.collect! do |use|
+    @uses.collect! do |use|
       if @all_components[use] == nil
         puts "WARNING: project use flag: #{use} points to a non-existent component."
-        self.valid = false
+        @valid = false
         return
       end
 
@@ -395,12 +397,12 @@ class Project < Item
     end
 
     add_use = []
-    self.uses.each do |use|
+    @uses.each do |use|
       add_use << use.get_dependencies
     end
-    self.uses << add_use
-    self.uses.flatten!
-    self.uses.uniq!
+    @uses << add_use
+    @uses.flatten!
+    @uses.uniq!
 
     # Run validity check at this point.
     abort_if_invalid
@@ -411,7 +413,7 @@ class Project < Item
     chipfamily = []
     board = []
 
-    self.uses.each do |use|
+    @uses.each do |use|
       if use.type == 'chip'
         chip << use.name
       end
@@ -425,25 +427,25 @@ class Project < Item
 
     if chip.length == 0
       puts 'WARNING: no chip selected in use flags of the project.'
-      self.valid = false
+      @valid = false
     end
     if chip.length > 1
       puts "WARNING: more then one chip selected in use flags of project: #{chip.to_s}"
-      self.valid = false
+      @valid = false
     end
 
     if chipfamily.length == 0
       puts 'WARNING: no chipfamily selected in use flags of the project.'
-      self.valid = false
+      @valid = false
     end
     if chipfamily.length > 1
       puts "WARNING: more then one chipfamily selected in use flags of project: #{chipfamily.to_s}"
-      self.valid = false
+      @valid = false
     end
 
     if board.length > 1
       puts "WARNING: more then one board selected in use flags of project: #{board.to_s}"
-      self.valid = false
+      @valid = false
     end
 
     # Run validity check at this point.
@@ -485,18 +487,41 @@ class Project < Item
   end
 
   def prefix_files_paths
-    prefix = 'cube' + self.cube.name + '/'
-    self.cube.components.each do |component|
+    prefix = 'cube' + @cube.name + '/'
+    @cube.components.each do |component|
       prefix_component(component, prefix)
     end
 
-    if self.src_dirs != nil
-      self.src_dirs.each do |src_dir|
+    if @src_dirs != nil
+      @src_dirs.each do |src_dir|
         prefix = src_dir.path + '/'
         src_dir.components.each do |component|
           prefix_component(component, prefix)
         end
       end
+    end
+  end
+
+  def prune_paths(paths)
+    paths.collect! do |inc|
+      if inc =~ /\/.$/
+        inc.chomp!('/.')
+      end
+      inc
+    end unless paths == nil
+  end
+
+  def prune_incs(component_base)
+    prune_paths(component_base.incs)
+    prune_paths(component_base.sys_incs)
+  end
+
+  def prune_all_incs
+    @all_components.each_value do |component|
+      prune_incs(component)
+      component.conditionals.each do |conditional|
+        prune_incs(conditional)
+      end unless component.conditionals == nil
     end
   end
 
@@ -507,6 +532,7 @@ class Project < Item
     replace_expand_uses
     verify_uses
     prefix_files_paths
+    prune_all_incs
   end
 
   def fetch_linker_script_data
@@ -563,6 +589,8 @@ class Project < Item
         merged += component_base.sys_incs unless component_base.sys_incs == nil
       when 'templates'
         merged += component_base.templates unless component_base.templates == nil
+      when 'arch'
+        merged += component_base.arch unless component_base.arch == nil
       else
         # Do nothing.
     end
@@ -602,10 +630,83 @@ class Project < Item
   end
 
   def fetch_makefile_data
+    filter = ComponentUsedFilter.new
+
+    defines_opt = []
+    c_flags_opt = ''
+    cpp_flags_opt = ''
+    as_flags_opt = ''
+    ld_flags_opt = ''
+    w_common_opt = ''
+
+    @options.each do |option|
+      case option.name
+        when 'c90'
+          c_flags_opt += '-std=c90 '
+        when 'c99'
+          c_flags_opt += '-std=c99 '
+        when 'c11'
+          c_flags_opt += '-std=c11 '
+        when 'c++98'
+          cpp_flags_opt += '-std=c++98 '
+        when 'c++03'
+          cpp_flags_opt += '-std=c++03 '
+        when 'c++11'
+          cpp_flags_opt += '-std=c++11 '
+        when 'c++14'
+          cpp_flags_opt += '-std=c++14 '
+        when 'noexcept'
+          cpp_flags_opt += '-fno-exceptions -fno-unwind-tables '
+          ld_flags_opt += '-fno-exceptions -fno-unwind-tables '
+        when 'nortti'
+          cpp_flags_opt += '-fno-rtti '
+          ld_flags_opt += '-fno-rtti '
+        when 'werror'
+          w_common_opt += '-Werror '
+        when 'offset'
+          if option.value != nil && option.value > 0
+            defines_opt << Define.new('BIN_OFFSET', option.value)
+          end
+        when 'fpu'
+          # Option fpu is a tagging option for the conditionals. Does not set extra vars.
+        else
+          puts 'WARNING: unsupported option specified in project file.'
+      end
+    end unless @options == nil
+
+    if @mode == 'debug'
+      c_flags_opt += '-O0 -g3 -gdwarf-2 '
+      cpp_flags_opt += '-O0 -g3 -gdwarf-2 '
+      as_flags_opt += '-O0 -g3 -gdwarf-2 '
+    else
+      c_flags_opt += '-O3 '
+      cpp_flags_opt += '-O3 '
+      as_flags_opt += '-O3 '
+      defines_opt << Define.new('NDEBUG', nil)
+    end
+
     data = {}
 
     data[:name] = @name
     data[:mode] = @mode
+    data[:defines] = merge('defines', [filter]) + defines_opt
+    data[:libs] = merge('libs', [filter])
+    data[:incs] = merge('incs', [filter])
+    data[:sys_incs] = merge('sys_incs', [filter])
+    data[:srcs] = merge('srcs', [filter])
+    data[:sys_srcs] = merge('sys_srcs', [filter])
+    data[:arch] = merge('arch', [filter])
+
+    data[:c_flags_opt] = c_flags_opt.strip
+    data[:cpp_flags_opt] = cpp_flags_opt.strip
+    data[:as_flags_opt] = as_flags_opt.strip
+    data[:ld_flags_opt] = ld_flags_opt.strip
+    data[:w_common_opt] = w_common_opt.strip
+
+    data[:oocd_path] = ''
+    data[:oocd_path] = "#{oocd_path}/" unless @oocd_path == nil
+    data[:gcc_path] = ''
+    data[:gcc_path] = "#{gcc_path}/" unless @gcc_path == nil
 
     data
   end
