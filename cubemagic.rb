@@ -43,6 +43,16 @@ class ComponentUsedFilter
   end
 end
 
+class ComponentCubeFilter
+  def filter(component, project)
+    match = true
+    if component == nil || project == nil || component.parent != project.cube
+      match = false
+    end
+    match
+  end
+end
+
 class CmdLine
   attr_accessor :actions, :options, :project, :template_unpack_dest
 
@@ -66,59 +76,18 @@ class LdScriptGen
   end
 end
 
-def merge_component_base(component_base, what)
-  merged = []
-  case what
-    when 'defines'
-      merged += component_base.defines unless component_base.defines == nil
-    when 'libs'
-      merged += component_base.libs unless component_base.libs == nil
-    when 'srcs'
-      merged += component_base.srcs unless component_base.srcs == nil
-    when 'sys_srcs'
-      merged += component_base.sys_srcs unless component_base.sys_srcs == nil
-    when 'incs'
-      merged += component_base.incs unless component_base.incs == nil
-    when 'sys_incs'
-      merged += component_base.sys_incs unless component_base.sys_incs == nil
-    when 'templates'
-      merged += component_base.templates unless component_base.templates == nil
-    else
-      # Do nothing.
+class MakefileGen
+  attr_accessor :data
+
+  def initialize(data)
+    @data = data
   end
-  merged
-end
 
-def merge(component_set, what, project, filters = nil)
-  merged = []
-
-  if component_set != nil && what != nil && project != nil
-    component_set.each do |component|
-
-      if filters != nil
-        match = true
-        filters.each do |filter|
-          unless filter.filter(component, project)
-            match = false
-            break
-          end
-        end
-        unless match
-          next
-        end
-      end
-
-      merged += merge_component_base(component, what)
-
-      component.conditionals.each do |conditional|
-        if conditional.conditions_met?(project)
-          merged += merge_component_base(conditional, what)
-        end
-      end unless component.conditionals == nil
+  def generate
+    File.open('Makefile', 'w+') do |os|
+      os.puts ERB.new(File.read("#{$cubemagic_dir}/templates/Makefile.erb"), nil, '-').result(binding)
     end
   end
-
-  merged
 end
 
 def unpack_file(zipfile, name, dest, overwrite = false)
@@ -163,17 +132,18 @@ def unpack_headers(zipfile, folder, dest, overwrite = false)
 end
 
 def unpack_cube(zipfile, project, overwrite = false)
-  filter = ComponentUsedFilter.new
+  used_filter = ComponentUsedFilter.new
+  cube_filter = ComponentCubeFilter.new
 
   header_paths = []
-  header_paths += merge(project.cube.components, 'incs', project, [filter])
-  header_paths += merge(project.cube.components, 'sys_incs', project, [filter])
+  header_paths += project.merge('incs', [used_filter, cube_filter])
+  header_paths += project.merge('sys_incs', [used_filter, cube_filter])
   header_paths.sort!
 
   file_paths = []
-  file_paths += merge(project.cube.components, 'libs', project, [filter])
-  file_paths += merge(project.cube.components, 'srcs', project, [filter])
-  file_paths += merge(project.cube.components, 'sys_srcs', project, [filter])
+  file_paths += project.merge('libs', [used_filter, cube_filter])
+  file_paths += project.merge('srcs', [used_filter, cube_filter])
+  file_paths += project.merge('sys_srcs', [used_filter, cube_filter])
   file_paths.sort!
 
   file_paths.each do |file|
@@ -196,10 +166,11 @@ def unpack_templates(zipfile, project, destdir, prompt, overwrite = false)
     overwrite = true
   end
 
-  filter = ComponentUsedFilter.new
+  used_filter = ComponentUsedFilter.new
+  cube_filter = ComponentCubeFilter.new
 
   templates = []
-  templates += merge(project.cube.components, 'templates', project, [filter])
+  templates += project.merge('templates', [used_filter, cube_filter])
   # templates.sort! # TODO: add sorter.
 
   templates.each do |template|
@@ -239,7 +210,6 @@ OptionParser.new do |opts|
   opts.on('-t', '--unpack-templates DESTINATION', 'Unpacks the templates in the cube to the specified directory.') do |ut|
     cmd_line.actions[:unpack_templates] = true
     cmd_line.template_unpack_dest = ut
-
   end
 
   opts.on('-p', '--prompt', 'Ask user input.') do |p|
@@ -326,7 +296,8 @@ end
 
 # Generate the Makefile if needed.
 if cmd_line.actions[:makefile]
-  # TODO: implement me
+  puts 'Generating Makefile: Makefile'
+  MakefileGen.new(project.fetch_makefile_data).generate
 end
 
 # Generate the linker script if needed.

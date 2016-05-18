@@ -545,4 +545,68 @@ class Project < Item
 
     data
   end
+
+  def merge_component_base(component_base, what)
+    merged = []
+    case what
+      when 'defines'
+        merged += component_base.defines unless component_base.defines == nil
+      when 'libs'
+        merged += component_base.libs unless component_base.libs == nil
+      when 'srcs'
+        merged += component_base.srcs unless component_base.srcs == nil
+      when 'sys_srcs'
+        merged += component_base.sys_srcs unless component_base.sys_srcs == nil
+      when 'incs'
+        merged += component_base.incs unless component_base.incs == nil
+      when 'sys_incs'
+        merged += component_base.sys_incs unless component_base.sys_incs == nil
+      when 'templates'
+        merged += component_base.templates unless component_base.templates == nil
+      else
+        # Do nothing.
+    end
+    merged
+  end
+
+  def merge(what, filters = nil)
+    merged = []
+
+    if what != nil
+      @all_components.values.each do |component|
+
+        if filters != nil
+          match = true
+          filters.each do |filter|
+            unless filter.filter(component, self)
+              match = false
+              break
+            end
+          end
+          unless match
+            next
+          end
+        end
+
+        merged += merge_component_base(component, what)
+
+        component.conditionals.each do |conditional|
+          if conditional.conditions_met?(self)
+            merged += merge_component_base(conditional, what)
+          end
+        end unless component.conditionals == nil
+      end
+    end
+
+    merged
+  end
+
+  def fetch_makefile_data
+    data = {}
+
+    data[:name] = @name
+    data[:mode] = @mode
+
+    data
+  end
 end
