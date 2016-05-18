@@ -304,8 +304,6 @@ cube 'f4', 'v1.11.0', 'STM32Cube_FW_F4_V1.11.0' do
     depends 'cmsis'
     define 'USE_HAL_DRIVER'
     sys_inc 'Drivers/STM32F4xx_HAL_Driver/Inc'
-    # TODO: Delete the hack below if the headers for sub dirs are also extracted.
-    sys_inc 'Drivers/STM32F4xx_HAL_Driver/Inc/Legacy'
     sys_src 'Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c'
     sys_src 'Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc_ex.c'
     sys_src 'Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c'

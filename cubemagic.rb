@@ -70,7 +70,7 @@ def unpack_headers(zipfile, folder, dest, overwrite = false)
     return
   end
 
-  entries = zipfile.glob("#{folder}/*.h")
+  entries = zipfile.glob("#{folder}/**/*.h")
 
   entries.each do |entry|
     if entry.name =~ /template.h$/
