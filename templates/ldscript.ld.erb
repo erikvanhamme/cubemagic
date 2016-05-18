@@ -119,7 +119,7 @@ SECTIONS {
 <%
 	if data[:ccm]
 -%>
-	_siccm = _siramfunc + LENGTH(.ramfunc)
+	_siccm = _siramfunc + SIZEOF(.ramfunc)
 
 	.ccm : AT (_siccm) {
 		_sccm = .;
@@ -131,7 +131,7 @@ SECTIONS {
 <%
 	elsif data[:itcm] || data[:dtcm]
 -%>
-	_siitcm = _siramfunc + LENGTH(.ramfunc)
+	_siitcm = _siramfunc + SIZEOF(.ramfunc)
 
 	.itcm : AT (_siitcm) {
 		_sitcm = .;
@@ -140,7 +140,7 @@ SECTIONS {
 		_eitcm = .;
 	} > itcm
 
-	_sidtcm = _siitcm + LENGTH(.itcm)
+	_sidtcm = _siitcm + SIZEOF(.itcm)
 
 	.dtcm : AT (_sidtcm) {
 		_sdtcm = .;
