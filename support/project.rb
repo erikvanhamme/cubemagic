@@ -193,7 +193,7 @@ end
 
 class Project < Item
   attr_accessor :name, :cube, :mode, :src_dirs, :uses, :defines, :options, :oocd_path, :gcc_path, :oocd_cfgs,
-                :all_components
+                :all_components, :oocd_cmds
 
   def abort_if_invalid
     valid = true
@@ -639,6 +639,8 @@ class Project < Item
     ld_flags_opt = ''
     w_common_opt = ''
 
+    offset = 0
+
     @options.each do |option|
       case option.name
         when 'c90'
@@ -666,6 +668,7 @@ class Project < Item
         when 'offset'
           if option.value != nil && option.value > 0
             defines_opt << Define.new('BIN_OFFSET', option.value)
+            offset = option.value
           end
         when 'fpu'
           # Option fpu is a tagging option for the conditionals. Does not set extra vars.
@@ -705,8 +708,11 @@ class Project < Item
 
     data[:oocd_path] = ''
     data[:oocd_path] = "#{oocd_path}/" unless @oocd_path == nil
+    data[:oocd_cfgs] = @oocd_cfgs
+    data[:oocd_cmds] = @oocd_cmds
     data[:gcc_path] = ''
     data[:gcc_path] = "#{gcc_path}/" unless @gcc_path == nil
+    data[:offset] = offset
 
     data
   end

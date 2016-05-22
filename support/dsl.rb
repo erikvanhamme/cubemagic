@@ -397,4 +397,12 @@ class DSL_Project < DSL_Item
     @item.oocd_cfgs << oocd_cfg
     # TODO: Add validation of input here.
   end
+
+  def oocd_cmd(oocd_cmd)
+    if @item.oocd_cmds == nil
+      @item.oocd_cmds = []
+    end
+    @item.oocd_cmds << oocd_cmd
+    # TODO: Add validation of input here.
+  end
 end

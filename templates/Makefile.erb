@@ -70,7 +70,7 @@ SYS_INCS := \
 	end
 -%>
 
-STATIC_LIBS :\
+STATIC_LIBS :=\
 <%
 	data[:libs].each do |lib|
 -%>
@@ -78,6 +78,8 @@ STATIC_LIBS :\
 <%
 	end
 -%>
+
+OFFSET := <%= data[:offset] %>
 
 BUILDMODE := <%= data[:mode] %>
 BUILDDIR := $(BUILDMODE)
@@ -89,6 +91,24 @@ INCLUDEPATHS := $(patsubst %,-I %,$(INCS)) $(patsubst %,-isystem %,$(SYS_INCS))
 
 ELFFILE := $(BUILDDIR)/$(PROJECT).elf
 BINFILE := $(BUILDDIR)/$(PROJECT).bin
+
+OOCD_CFGS := \
+<%
+	data[:oocd_cfgs].each do |oocd_cfg|
+-%>
+	-f "<%= oocd_cfg %>" \
+<%
+	end unless data[:oocd_cfgs] == nil
+-%>
+
+OOCD_CMDS := \
+<%
+	data[:oocd_cmds].each do |oocd_cmd|
+-%>
+	-c "<%= oocd_cmd %>" \
+<%
+	end unless data[:oocd_cmds] == nil
+-%>
 
 W_COMMON := -Wall -Wextra -Wcast-align -Wcast-qual -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op \
 	-Wmissing-include-dirs -Wredundant-decls -Wstrict-overflow=5 -Wno-unused -Wno-variadic-macros -Wno-parentheses \
@@ -104,9 +124,9 @@ C_FLAGS_COMMON = -c $(DEPGEN) -ffunction-sections -fdata-sections -Wa,-adhlns="$
 C_FLAGS = $(C_FLAGS_COMMON) -fno-builtin <%= data[:c_flags_opt] %>
 CPP_FLAGS = $(C_FLAGS_COMMON) <%= data[:cpp_flags_opt] %>
 AS_FLAGS = -c <%= data[:as_flags_opt] %>
-LDFLAGS = -T "ldscript.ld" -Xlinker --gc-sections -nostartfiles --specs=nano.specs <%= data[:ld_flags_opt] %> \
+LD_FLAGS = -T "ldscript.ld" -Xlinker --gc-sections -nostartfiles --specs=nano.specs <%= data[:ld_flags_opt] %> \
 	-Wl,-Map=$(BUILDDIR)/$(PROJECT).map
-OCFLAGS = -O binary
+OC_FLAGS = -O binary
 
 CC := <%= data[:gcc_path] %>arm-none-eabi-gcc
 AS := <%= data[:gcc_path] %>arm-none-eabi-gcc
@@ -125,31 +145,33 @@ OOCD := <%= data[:oocd_path] %>openocd
 all:: $(OBJECTDIRS) $(BINFILE)
 
 info::
-	@echo "project        $(PROJECT)"
+	@echo "project:       $(PROJECT)"
 	@echo ""
-	@echo "arch           $(ARCH)"
+	@echo "bin file:      $(BINFILE)"
+	@echo ""
+	@echo "arch:          $(ARCH)"
 	@echo ""
 	@echo "builddir:      $(BUILDDIR)"
 	@echo ""
 	@echo "includepaths:  $(INCLUDEPATHS)"
 	@echo ""
-	@echo "cflags:        $(CFLAGS)"
+	@echo "cflags:        $(C_FLAGS)"
 	@echo ""
-	@echo "cpplags:       $(CPPFLAGS)"
+	@echo "cpplags:       $(CPP_FLAGS)"
 	@echo ""
-	@echo "asflags:       $(ASFLAGS)"
+	@echo "asflags:       $(AS_FLAGS)"
 	@echo ""
-	@echo "ldflags:       $(LDFLAGS)"
+	@echo "ldflags:       $(LD_FLAGS)"
 	@echo ""
 	@echo "defines:       $(DEFINES)"
 	@echo ""
-	@echo "static libs:   $(SLIBS)"
+	@echo "static libs:   $(STATIC_LIBS)"
 	@echo ""
 
 info_verbose:: info
-	@echo "sources:       $(SOURCES)"
+	@echo "sources:       $(SRCS)"
 	@echo ""
-	@echo "systemsources: $(SYSTEMSOURCES)"
+	@echo "systemsources: $(SYS_SRCS)"
 	@echo ""
 	@echo "objects:       $(OBJECTS)"
 	@echo ""
@@ -166,19 +188,19 @@ $(OBJECTDIRS):
 
 $(ELFFILE): $(OBJECTS) $(SLIBS)
 	@echo "Linking"
-	@$(LD) $(ARCH) $(LDFLAGS) $(OBJECTS) $(STATIC_LIBS) -o $(ELFFILE)
+	@$(LD) $(ARCH) $(LD_FLAGS) $(OBJECTS) $(STATIC_LIBS) -o $(ELFFILE)
 	@echo "---------------------------------------"
 	@$(OS) $(ELFFILE)
 	@echo "---------------------------------------"
 
 $(BINFILE): $(ELFFILE)
-	@$(OC) $(OCFLAGS) $(ELFFILE) $(BINFILE)
+	@$(OC) $(OC_FLAGS) $(ELFFILE) $(BINFILE)
 
 flash: $(BINFILE)
-	$(OOCD) $(OOCDCFGS) $(OOCDCMDS)
+	$(OOCD) $(OOCD_CFGS) $(OOCD_CMDS)
 
 oocd: $(BINFILE)
-	$(OOCD) $(OOCDCFGS)
+	$(OOCD) $(OOCD_CFGS)
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(strip $(DEPS)),)

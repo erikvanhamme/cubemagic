@@ -34,10 +34,17 @@ project 'template_project' do
   option 'offset', 0x0
   option 'fpu'
 
-  oocd_path '/usr/bin'
-
   gcc_path '/usr/local/bin'
+
+  oocd_path '/usr/bin'
 
   oocd_cfg 'interface/stlink-v2.cfg'
   oocd_cfg 'target/stm32f4x.cfg'
+
+  oocd_cmd 'init'
+  oocd_cmd 'reset halt'
+  oocd_cmd 'flash erase_sector 0 0 last'
+  oocd_cmd 'flash write_bank 0 $(BINFILE) $(OFFSET)'
+  oocd_cmd 'reset run'
+  oocd_cmd 'shutdown'
 end
