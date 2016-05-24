@@ -88,6 +88,14 @@ class DSL_Item
     # TODO: Add validation.
   end
 
+  def parse_file(item, file)
+    if item.files == nil
+      item.files = []
+    end
+    item.files << file
+    #TODO: Add validation.
+  end
+
   def parse_component(item, name, type, &block)
     if item.components == nil
       item.components = []
@@ -131,6 +139,10 @@ class DSL_ComponentBase < DSL_Item
 
   def arch(arch)
     parse_arch(@item, arch)
+  end
+
+  def file(file)
+    parse_file(@item, file)
   end
 end
 

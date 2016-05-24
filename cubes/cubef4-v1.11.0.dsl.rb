@@ -267,6 +267,7 @@ cube 'f4', 'v1.11.0', 'STM32Cube_FW_F4_V1.11.0' do
     sys_src 'Drivers/CMSIS/DSP_Lib/Source/SupportFunctions/arm_q7_to_q15.c'
     sys_src 'Drivers/CMSIS/DSP_Lib/Source/SupportFunctions/arm_q7_to_q31.c'
     sys_src 'Drivers/CMSIS/DSP_Lib/Source/TransformFunctions/arm_bitreversal.c'
+    sys_src 'Drivers/CMSIS/DSP_Lib/Source/TransformFunctions/arm_bitreversal2.S'
     sys_src 'Drivers/CMSIS/DSP_Lib/Source/TransformFunctions/arm_cfft_f32.c'
     sys_src 'Drivers/CMSIS/DSP_Lib/Source/TransformFunctions/arm_cfft_q15.c'
     sys_src 'Drivers/CMSIS/DSP_Lib/Source/TransformFunctions/arm_cfft_q31.c'
@@ -435,6 +436,66 @@ cube 'f4', 'v1.11.0', 'STM32Cube_FW_F4_V1.11.0' do
     sys_src 'Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f417xx.s'
   end
 
+  # [ST] 429xE chip.
+  chip 'stm32f429xe' do
+    depends 'stm32f4xx'
+    flash '512k'
+    sram '192k'
+    ccm '64k'
+    define 'STM32F429xx'
+    sys_src 'Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f429xx.s'
+  end
+
+  # [ST] 429xG chip.
+  chip 'stm32f429xg' do
+    depends 'stm32f4xx'
+    flash '1M'
+    sram '192k'
+    ccm '64k'
+    define 'STM32F429xx'
+    sys_src 'Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f429xx.s'
+  end
+
+  # [ST] 429xI chip.
+  chip 'stm32f429xi' do
+    depends 'stm32f4xx'
+    flash '2M'
+    sram '192k'
+    ccm '64k'
+    define 'STM32F429xx'
+    sys_src 'Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f429xx.s'
+  end
+
+  # [ST] 439xE chip.
+  chip 'stm32f439xe' do
+    depends 'stm32f4xx'
+    flash '512k'
+    sram '192k'
+    ccm '64k'
+    define 'STM32F439xx'
+    sys_src 'Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f439xx.s'
+  end
+
+  # [ST] 439xG chip.
+  chip 'stm32f439xg' do
+    depends 'stm32f4xx'
+    flash '1M'
+    sram '192k'
+    ccm '64k'
+    define 'STM32F439xx'
+    sys_src 'Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f439xx.s'
+  end
+
+  # [ST] 439xI chip.
+  chip 'stm32f439xi' do
+    depends 'stm32f4xx'
+    flash '2M'
+    sram '192k'
+    ccm '64k'
+    define 'STM32F439xx'
+    sys_src 'Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f439xx.s'
+  end
+
   # -- Board Support Section -------------------------------------------------------------------------------------------
 
   # [ST] Common component for board support packages.
@@ -446,6 +507,18 @@ cube 'f4', 'v1.11.0', 'STM32Cube_FW_F4_V1.11.0' do
   component 'cs43l22' do
     sys_inc 'Drivers/BSP/Components/cs43l22'
     sys_src 'Drivers/BSP/Components/cs43l22/cs43l22.c'
+  end
+
+  # [ST] Component driver for ili9341 chip.
+  component 'ili9341' do
+    sys_inc 'Drivers/BSP/Components/ili9341'
+    sys_src 'Drivers/BSP/Components/ili9341/ili9341.c'
+  end
+
+  # [ST] Component driver for l3gd20 chip.
+  component 'l3gd20' do
+    sys_inc 'Drivers/BSP/Components/l3gd20'
+    sys_src 'Drivers/BSP/Components/l3gd20/l3gd20.c'
   end
 
   # [ST] Component driver for lis302dl chip.
@@ -460,9 +533,15 @@ cube 'f4', 'v1.11.0', 'STM32Cube_FW_F4_V1.11.0' do
     sys_src 'Drivers/BSP/Components/lis3dsh/lis3dsh.c'
   end
 
+  # [ST] Component driver for stmpe811 chip.
+  component 'stmpe811' do
+    sys_inc 'Drivers/BSP/Components/stmpe811'
+    sys_src 'Drivers/BSP/Components/stmpe811/stmpe811.c'
+  end
+
   # [ST] Board support package for STM32F4-Discovery board.
   board 'stm32f4-discovery' do
-    define 'HSE_SPEED', '8000000'
+    define 'HSE_VALUE', '8000000'
     depends 'stm32f407xg'
     depends 'hal'
     depends 'bsp_common'
@@ -474,6 +553,26 @@ cube 'f4', 'v1.11.0', 'STM32Cube_FW_F4_V1.11.0' do
     sys_src 'Drivers/BSP/STM32F4-Discovery/stm32f4_discovery.c'
     sys_src 'Drivers/BSP/STM32F4-Discovery/stm32f4_discovery_accelerometer.c'
     sys_src 'Drivers/BSP/STM32F4-Discovery/stm32f4_discovery_audio.c'
+  end
+
+  # [ST] Board support package for STM32F429I-Discovery board.
+  board 'stm32f429i-discovery' do
+    define 'HSE_VALUE', '8000000'
+    depends 'stm32f429xi'
+    depends 'hal'
+    depends 'bsp_common'
+    depends 'fonts'
+    depends 'ili9341'
+    depends 'l3gd20'
+    depends 'stmpe811'
+    sys_inc 'Drivers/BSP/STM32F429I-Discovery'
+    sys_src 'Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.c'
+    sys_src 'Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_eeprom.c'
+    sys_src 'Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_gyroscope.c'
+    sys_src 'Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_io.c'
+    sys_src 'Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.c'
+    sys_src 'Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_sdram.c'
+    sys_src 'Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_ts.c'
   end
 
   # -- Middleware Support Section --------------------------------------------------------------------------------------
@@ -489,5 +588,24 @@ cube 'f4', 'v1.11.0', 'STM32Cube_FW_F4_V1.11.0' do
       condition_option_unset 'fpu'
       lib 'Middlewares/ST/STM32_Audio/Addons/PDM/libPDMFilter_CM4_GCC.a'
     end
+  end
+
+  # -- Utilities Support Section ---------------------------------------------------------------------------------------
+
+  # [ST] Fonts utility support.
+  component 'fonts' do
+    sys_inc 'Utilities/Fonts'
+    file 'Utilities/Fonts/font8.c'
+    file 'Utilities/Fonts/font12.c'
+    file 'Utilities/Fonts/font16.c'
+    file 'Utilities/Fonts/font20.c'
+    file 'Utilities/Fonts/font24.c'
+  end
+
+  # [ST] Log utility support.
+  component 'lcd_log' do
+    sys_inc 'Utilities/Log'
+    sys_src 'Utilities/Log/lcd_log.c'
+    template 'Utilities/Log/lcd_log_conf_template.h'
   end
 end

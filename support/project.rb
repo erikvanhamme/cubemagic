@@ -104,7 +104,7 @@ class ConditionUse <  Item
 end
 
 class ComponentBase < Item
-  attr_accessor :libs, :sys_incs, :sys_srcs, :srcs, :incs, :defines, :templates, :arch
+  attr_accessor :libs, :sys_incs, :sys_srcs, :srcs, :incs, :defines, :templates, :arch, :files
 end
 
 class Conditional < ComponentBase
@@ -475,6 +475,7 @@ class Project < Item
     prefix_array(component.srcs, prefix)
     prefix_array(component.libs, prefix)
     prefix_templates_array(component.templates, prefix)
+    prefix_array(component.files, prefix)
   end
 
   def prefix_component(component, prefix)
@@ -591,6 +592,8 @@ class Project < Item
         merged += component_base.templates unless component_base.templates == nil
       when 'arch'
         merged += component_base.arch unless component_base.arch == nil
+      when 'files'
+        merged += component_base.files unless component_base.files == nil
       else
         # Do nothing.
     end

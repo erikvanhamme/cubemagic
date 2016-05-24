@@ -96,13 +96,14 @@ def unpack_cube(zipfile, project, overwrite = false)
   file_paths += project.merge('libs', [used_filter, cube_filter])
   file_paths += project.merge('srcs', [used_filter, cube_filter])
   file_paths += project.merge('sys_srcs', [used_filter, cube_filter])
+  file_paths += project.merge('files', [used_filter, cube_filter])
   file_paths.sort!
 
   file_paths.each do |file|
     zipname = file.sub("cube#{project.cube.name}", project.cube.root)
     unpack_file(zipfile, zipname, file, overwrite)
   end
-
+exit 0
   header_paths.each do |header_path|
     zipname = header_path.sub("cube#{project.cube.name}", project.cube.root)
     unpack_headers(zipfile, zipname, header_path, overwrite)

@@ -224,6 +224,10 @@ $(BUILDDIR)/%.ssys.o : %.s
 	@echo "Assembling $<"
 	@$(AS) $(ARCH) $(AS_FLAGS) -o "$@" "$<"
 
+$(BUILDDIR)/%.Ssys.o : %.S
+	@echo "Assembling $<"
+	@$(AS) $(ARCH) $(AS_FLAGS) -o "$@" "$<"
+
 $(BUILDDIR)/%.csys.o : %.c
 	@echo "Compiling $<"
 	@$(CC) $(ARCH) $(C_FLAGS) $(INCLUDEPATHS) $(DEFINES) -o "$@" "$<"
