@@ -103,7 +103,7 @@ def unpack_cube(zipfile, project, overwrite = false)
     zipname = file.sub("cube#{project.cube.name}", project.cube.root)
     unpack_file(zipfile, zipname, file, overwrite)
   end
-exit 0
+
   header_paths.each do |header_path|
     zipname = header_path.sub("cube#{project.cube.name}", project.cube.root)
     unpack_headers(zipfile, zipname, header_path, overwrite)

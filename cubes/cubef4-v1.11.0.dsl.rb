@@ -396,6 +396,62 @@ cube 'f4', 'v1.11.0', 'STM32Cube_FW_F4_V1.11.0' do
     template 'Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c', 'auto'
   end
 
+  # [ST] 401xB chip.
+  chip 'stm32f401xb' do
+    depends 'stm32f4xx'
+    flash '128k'
+    sram '64k'
+    define 'STM32F401xC'
+    sys_src 'Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f401xc.s'
+  end
+
+  # [ST] 401xC chip.
+  chip 'stm32f401xc' do
+    depends 'stm32f4xx'
+    flash '256k'
+    sram '64k'
+    define 'STM32F401xC'
+    sys_src 'Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f401xc.s'
+  end
+
+  # [ST] 401xD chip.
+  chip 'stm32f401xd' do
+    depends 'stm32f4xx'
+    flash '384k'
+    sram '96k'
+    define 'STM32F401xE'
+    sys_src 'Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f401xe.s'
+  end
+
+  # [ST] 401xE chip.
+  chip 'stm32f401xe' do
+    depends 'stm32f4xx'
+    flash '512k'
+    sram '96k'
+    define 'STM32F401xE'
+    sys_src 'Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f401xe.s'
+  end
+
+  # [ST] 405xE chip.
+  chip 'stm32f405xe' do
+    depends 'stm32f4xx'
+    flash '512k'
+    sram '128k'
+    ccm '64k'
+    define 'STM32F405xx'
+    sys_src 'Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f405xx.s'
+  end
+
+  # [ST] 405xG chip.
+  chip 'stm32f405xg' do
+    depends 'stm32f4xx'
+    flash '1024k'
+    sram '128k'
+    ccm '64k'
+    define 'STM32F405xx'
+    sys_src 'Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f405xx.s'
+  end
+
   # [ST] 407xE chip.
   chip 'stm32f407xe' do
     depends 'stm32f4xx'
@@ -573,6 +629,14 @@ cube 'f4', 'v1.11.0', 'STM32Cube_FW_F4_V1.11.0' do
     sys_src 'Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.c'
     sys_src 'Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_sdram.c'
     sys_src 'Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_ts.c'
+  end
+
+  # [ST] Board support package for STM32F4xx-Nucleo board.
+  board 'stm32f4xx-nucleo' do
+    depends 'stm32f401xe'
+    depends 'hal'
+    sys_inc 'Drivers/BSP/STM32F4xx-Nucleo'
+    sys_src 'Drivers/BSP/STM32F4xx-Nucleo/stm32f4xx_nucleo.c'
   end
 
   # -- Middleware Support Section --------------------------------------------------------------------------------------
