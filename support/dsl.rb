@@ -165,6 +165,24 @@ class DSL_Conditional < DSL_ComponentBase
     @item.conditions << condition
     #TODO: add validation for option.
   end
+
+  def condition_used(option)
+    if @item.conditions == nil
+      @item.conditions = []
+    end
+    condition = ConditionUse.new(option, false)
+    @item.conditions << condition
+    #TODO: add validation for option.
+  end
+
+  def condition_unused(option)
+    if @item.conditions == nil
+      @item.conditions = []
+    end
+    condition = ConditionUse.new(option, true)
+    @item.conditions << condition
+    #TODO: add validation for option.
+  end
 end
 
 class DSL_Component < DSL_ComponentBase

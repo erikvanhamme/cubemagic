@@ -654,6 +654,53 @@ cube 'f4', 'v1.11.0', 'STM32Cube_FW_F4_V1.11.0' do
     end
   end
 
+  # [CHaN] FAT File System.
+  component 'fatfs' do
+    sys_inc 'Middlewares/Third_Party/FatFs/src'
+    sys_src 'Middlewares/Third_Party/FatFs/src/diskio.c'
+    sys_src 'Middlewares/Third_Party/FatFs/src/ff.c'
+    sys_src 'Middlewares/Third_Party/FatFs/src/ff_gen_drv.c' # [ST]
+    conditional do
+      condition_used 'freertos'
+      sys_src 'Middlewares/Third_Party/FatFs/src/option/syscall.c'
+    end
+    sys_src 'Middlewares/Third_Party/FatFs/src/option/unicode.c'
+    file 'Middlewares/Third_Party/FatFs/src/option/cc932.c'
+    file 'Middlewares/Third_Party/FatFs/src/option/cc936.c'
+    file 'Middlewares/Third_Party/FatFs/src/option/cc949.c'
+    file 'Middlewares/Third_Party/FatFs/src/option/cc950.c'
+    file 'Middlewares/Third_Party/FatFs/src/option/ccsbcs.c'
+    template 'Middlewares/Third_Party/FatFs/src/ffconf_template.h'
+  end
+
+  # [ST] SD FAT File System driver.
+  component 'fatfs_sd' do
+    depends 'fatfs'
+    sys_inc 'Middlewares/Third_Party/FatFs/src/drivers'
+    sys_src 'Middlewares/Third_Party/FatFs/src/drivers/sd_diskio.c'
+  end
+
+  # [ST] SDRAM FAT File System driver.
+  component 'fatfs_sdram' do
+    depends 'fatfs'
+    sys_inc 'Middlewares/Third_Party/FatFs/src/drivers'
+    sys_src 'Middlewares/Third_Party/FatFs/src/drivers/sdram_diskio.c'
+  end
+
+  # [ST] SRAM FAT File System driver.
+  component 'fatfs_sram' do
+    depends 'fatfs'
+    sys_inc 'Middlewares/Third_Party/FatFs/src/drivers'
+    sys_src 'Middlewares/Third_Party/FatFs/src/drivers/sram_diskio.c'
+  end
+
+  # [ST] USB-H FAT File System driver.
+  component 'fatfs_usbh' do
+    depends 'fatfs'
+    sys_inc 'Middlewares/Third_Party/FatFs/src/drivers'
+    sys_src 'Middlewares/Third_Party/FatFs/src/drivers/usbh_diskio.c'
+  end
+
   # -- Utilities Support Section ---------------------------------------------------------------------------------------
 
   # [ST] Fonts utility support.
